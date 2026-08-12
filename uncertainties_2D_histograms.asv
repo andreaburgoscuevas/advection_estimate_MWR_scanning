@@ -1,0 +1,358 @@
+% uncertainty vs regime matrix 2D histogram
+
+
+close all
+clear all
+
+%% from Dav'es code with my values:
+
+    valA_temp=300;  % in K         my value ; Temperature [K] or WVMR [g/kg] at point A     
+    valB_temp= 300.3; % in K %$  my value       ; Temperature [K] or WVMR [g/kg] at point B    
+    sigma_valA_temp=0.7; % K with mC  %$   ; Assumed uncertainty of the val at A          
+    sigma_valB_temp=0.7; % K with MC, %$   ; Assumed uncertainty of the val at B  
+
+    valA_hum=1;  % in g/kg        my value ; Temperature [K] or WVMR [g/kg] at point A     
+    valB_hum= 1.3; % in g/kg %$  my value       ; Temperature [K] or WVMR [g/kg] at point B    
+    sigma_valA_hum=0.04; % g/kg with mC  %$   ; Assumed uncertainty of the val at A          
+    sigma_valB_hum=0.04; % g/kg with MC, %$   ; Assumed uncertainty of the val at B 
+
+
+    dist_A_to_B= 3; % in km  %$  ; Distance between points A and B [km]
+    wspd= 2;  %in m/s         ; Mean wind speed from A to B [m/s]
+    sigma_wspd= 0.8; % in m/s     ; Uncertainty in wind speed [m/s]
+
+    % Adjust the wind speed to have the units needed
+    wspd_adj       = wspd * (1/1000.) * (3600/1.); %              ; Convert [m/s] to [km/hr] 
+    sigma_wspd_adj = sigma_wspd * (1/1000.) * (3600/1.);  %        ; Convert [m/s] to [km/hr] 
+
+    % Compute the horizontal gradient and its uncertainty
+    gradient_hum       = abs(valA_hum - valB_hum) / dist_A_to_B; % it does agree with values on my table
+    gradient_temp       = abs(valA_temp - valB_temp) / dist_A_to_B; % it does agree with values on my table
+
+    %sigVal_hum = sigma_valA_hum/sqrt(3); % g/kg
+    %var_gradient_hum   = (sigVal_hum)^2 * (1./dist_A_to_B)^2 + ...
+     %                (sigVal_hum)^2 * (1./dist_A_to_B)^2        ; %X^2 * [1/km]^2 == [X/km]^2
+    %sigVal_temp = sigma_valA_temp/sqrt(3); % K
+    %var_gradient_temp   = (sigVal_temp)^2 * (1./dist_A_to_B)^2 + ...
+     %                (sigVal_temp)^2 * (1./dist_A_to_B)^2        ; %X^2 * [1/km]^2 == [X/km]^2
+
+     %% now with updated MC uncert. with dif noise dif direction, gradient horizontal and sdtv
+var_gradient_hum = 0.13/dist_A_to_B; % 0.13 g/kg see excel file
+var_gradient_temp = 0.4/dist_A_to_B; % 0.4 K see excel file
+
+sigma_gradient_hum = (var_gradient_hum);% a bit different our calculation here but very similar 
+sigma_gradient_temp = (var_gradient_temp); % this is uncert delta_T/delta_x uncert (K/km) in my table in excel
+
+% Compute the advection and its uncertainty
+    advection_hum     = gradient_hum * wspd_adj ; % X/km * km/hr = [X/hr]
+    var_advection_hum   = (sigma_gradient_hum)^2 * (wspd_adj)^2 +...
+                      (sigma_wspd_adj)^2 * (gradient_hum)^2         ;% [X/km]^2 * [km/hr]^2 = [X/hr]^2
+    sigma_advection_hum = sqrt(var_advection_hum);
+
+    advection_temp     = gradient_temp * wspd_adj ; % X/km * km/hr = [X/hr]
+    var_advection_temp   = (sigma_gradient_temp)^2 * (wspd_adj)^2 +...
+                      (sigma_wspd_adj)^2 * (gradient_temp)^2         ;% [X/km]^2 * [km/hr]^2 = [X/hr]^2
+    sigma_advection_temp = sqrt(var_advection_temp);
+
+    percentage_advection_temp = 100*sigma_advection_temp/advection_temp
+    percentage_advection_hum = 100*sigma_advection_hum/advection_hum
+
+    %% now I am doing advection grid: 
+    T_gradient_grid = 0.001:0.01:0.6; % in K/km
+    q_gradient_grid = 0.001:0.01:0.15; % in g/kg/km
+    wspd_grid = 0.1:0.5:6.5; % in m/s
+    wspd_grid_adj = (3600/1000).*wspd_grid;
+
+    typical_q_grad = 0.1; typical_wspd = 2; typical_T_grad= 0.1;
+    extreme_q_grad = .1; extreme_wspd = 4; extreme_T_grad= 0.23;
+    extrme_q_advection_ms = extreme_q_grad*extreme_wspd;
+    extreme_T_advection_ms = extreme_T_grad*extreme_wspd;
+
+    typical_q_grad_adj = 0.1; typical_wspd_adj = 2*3600/1000; typical_T_grad_adj= 0.1;
+    extreme_q_grad_adj = .1; extreme_wspd_adj = 4*3600/1000; extreme_T_grad_adj= 0.23;
+    extrme_q_advection = extreme_q_grad_adj*extreme_wspd_adj
+    extreme_T_advection = extreme_T_grad_adj*extreme_wspd_adj
+
+for i=1:length(q_gradient_grid); for j=1:length(wspd_grid_adj)
+    advection_mat_q_hr(i,j) = q_gradient_grid(i).* wspd_grid_adj(j) ; % X/km * km/hr = [X/hr]
+    sigma_advection_mat_q_hr(i,j) = sqrt( (sigma_gradient_hum)^2 * (wspd_grid_adj(j))^2 +...
+                      (sigma_wspd_adj)^2 * (q_gradient_grid(i))^2 )        ;% [X/km]^2 * [km/hr]^2 = [X/hr]^2    
+
+end; end
+
+for i=1:length(T_gradient_grid); for j=1:length(wspd_grid_adj)
+    advection_mat_T_hr(i,j) = T_gradient_grid(i).* wspd_grid_adj(j) ; % X/km * km/hr = [X/hr]
+    sigma_advection_mat_T_hr(i,j) = sqrt( (sigma_gradient_temp)^2 * (wspd_grid_adj(j))^2 +...
+                      (sigma_wspd_adj)^2 * (T_gradient_grid(i))^2 )        ;% [X/km]^2 * [km/hr]^2 = [X/hr]^2  
+end; end
+
+
+advection_unc_ratio_q_hr = sigma_advection_mat_q_hr./advection_mat_q_hr;
+log_ratio_q = log10(advection_unc_ratio_q_hr);
+advection_ratio_percent_q_hr = 100.*advection_unc_ratio_q_hr;
+
+advection_unc_ratio_T_hr = sigma_advection_mat_T_hr./advection_mat_T_hr;
+log_ratio_T = log10(advection_unc_ratio_T_hr);
+advection_ratio_percent_T_hr = 100.*advection_unc_ratio_T_hr;
+
+%% plotting
+min_color_percent_q = 0; max_color_percent_q = 200; step_color_percent_q = 15;
+min_color_percent_T = 0; max_color_percent_T = 200; step_color_percent_T = 15;
+
+min_color_adv_q = 0; max_color_adv_q = 3; step_color_adv_q = 0.01;
+min_color_adv_T = 0; max_color_adv_T = 10; step_color_adv_T = 0.02;
+
+
+[a1T_hr,a2T_hr] = meshgrid(T_gradient_grid,wspd_grid_adj); [a1q_hr,a2q_hr] = meshgrid(q_gradient_grid,wspd_grid_adj);
+[a1T_ms,a2T_ms] = meshgrid(T_gradient_grid,wspd_grid); [a1q_ms,a2q_ms] = meshgrid(q_gradient_grid,wspd_grid);
+advT_hr=(a1T_hr.*a2T_hr); advQ_hr =(a1q_hr.*a2q_hr);
+advT_ms=(a1T_ms.*a2T_ms); advQ_ms =(a1q_hr.*a2q_ms);
+% 
+% 
+% figure(1); pcolor(q_gradient_grid,wspd_grid_adj,advection_mat_q'); title('Advection hum'); colorbar;
+% xlabel('q gradient (g/kg/km)'); ylabel('wind speed (km/hr)')
+% 
+% figure(2); pcolor(q_gradient_grid,wspd_grid_adj,advection_unc_ratio_q'); title('sigmaAdvection/Advection'); colorbar;
+% xlabel('q gradient (g/kg/km)'); ylabel('wind speed (km/hr)')
+% 
+% figure(3); pcolor(q_gradient_grid,wspd_grid_adj,log_ratio_q'); title('log_10 sigma/Advection'); colorbar;
+% xlabel('q gradient (g/kg/km)'); ylabel('wind speed (km/hr)')
+% 
+% figure(4); pcolor(q_gradient_grid,wspd_grid_adj,advection_ratio_percent_q'); title('percentage uncertainty'); colorbar;
+% xlabel('q gradient (g/kg/km)'); ylabel('wind speed (km/hr)'); caxis([0 100])
+% 
+
+
+
+figure('position',[10,10,1500,1500],'Renderer','painters');
+
+subplot(2,2,1)
+title('a) \theta advection')
+hold on
+%[a1T,a2T] = meshgrid(T_gradient_grid,wspd_grid_adj);
+%subplot(3,1,1)
+contourf(a1T_hr,a2T_hr,advT_hr,[min_color_adv_T:step_color_adv_T:max_color_adv_T],'LineColor','none')
+%hold on; plot(typical_q_grad_adj,typical_wspd_adj, 'ko', 'LineWidth',5); hold on
+%hold on; plot(extreme_q_grad_adj,extreme_wspd_adj, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+%contour(a1q,a2q,advection_ratio_percent_q',[50 100],'-k') 
+%contour(a1q,a2q,advection_ratio_percent_q',[150 200],'-k')
+grid on; xlabel('horizontal difference of \theta (K km^{-1})'); ylabel('wind speed (km hr^{-1})')
+aa12 = (nclCM('MPL_rainbow',(size(min_color_adv_T:step_color_adv_T:max_color_adv_T,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('BlGrYeOrReVi200',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_adv_T:step_color_adv_T:max_color_adv_T];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa12)
+hcb_Tadv=colorbar;
+colorTitleHandle_Tadv = get(hcb_Tadv,'Title');
+titleString_Tadv = '[K hr^{-1}]'; 
+set(colorTitleHandle_Tadv ,'String',titleString_Tadv);
+
+
+subplot(2,2,2)
+title('b) q advection')
+hold on
+contourf(a1q_hr,a2q_hr,advQ_hr,[min_color_adv_q:step_color_adv_q:max_color_adv_q],'LineColor','none')
+%hold on; plot(typical_q_grad_adj,typical_wspd_adj, 'ko', 'LineWidth',5); hold on
+%hold on; plot(extreme_q_grad_adj,extreme_wspd_adj, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+%contour(a1q,a2q,advection_ratio_percent_q',[50 100],'-k') 
+%contour(a1q,a2q,advection_ratio_percent_q',[150 200],'-k')
+grid on; xlabel('horizontal difference of q (g kg^{-1}km^{-1})'); ylabel('wind speed (km hr^{-1})')
+aa11 = (nclCM('MPL_rainbow',(size(min_color_adv_q:step_color_adv_q:max_color_adv_q,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('BlGrYeOrReVi200',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_adv_q:step_color_adv_q:max_color_adv_q];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa11)
+hcb_Qadv=colorbar;
+colorTitleHandle_Qadv = get(hcb_Qadv,'Title');
+titleString_Qadv = '[g kg^{-1} hr^{-1}]'; 
+set(colorTitleHandle_Qadv ,'String',titleString_Qadv);
+
+
+subplot(2,2,3)
+title('c) uncertainty ratio (\theta advection) ')
+hold on
+%subplot(3,1,1)
+contourf(a1T_hr,a2T_hr,advection_ratio_percent_T_hr',[min_color_percent_T:step_color_percent_T:max_color_percent_T],'LineColor','none')
+hold on; plot(typical_T_grad_adj,typical_wspd_adj, 'ko', 'LineWidth',5); hold on
+hold on; plot(extreme_T_grad_adj,extreme_wspd_adj, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+contour(a1T_hr,a2T_hr,advection_ratio_percent_T_hr',[50 100],'-k') % 
+contour(a1T_hr,a2T_hr,advection_ratio_percent_T_hr',[150 200],'-k')
+grid on; xlabel('horizontal difference of \theta (K km^{-1})'); ylabel('wind speed (km hr^{-1})')
+aa1T = (nclCM('MPL_rainbow',(size(min_color_percent_T:step_color_percent_T:max_color_percent_T,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('CBR_coldhot',(size(min_color_percent_T:step_color_percent_T:max_color_percent_T,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_percent_T:step_color_percent_T:max_color_percent_T];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa1T)
+hcb_uncert=colorbar;
+colorTitleHandle_uncert = get(hcb_uncert,'Title');
+titleString_uncert = '%'; 
+set(colorTitleHandle_uncert ,'String',titleString_uncert);
+
+
+
+subplot(2,2,4)
+title('d) uncertainty ratio (q advection)')
+hold on
+[a1q_hr,a2q_hr] = meshgrid(q_gradient_grid,wspd_grid_adj);
+%subplot(3,1,1)
+contourf(a1q_hr,a2q_hr,advection_ratio_percent_q_hr',[min_color_percent_q:step_color_percent_q:max_color_percent_q],'LineColor','none')
+hold on; plot(typical_q_grad_adj,typical_wspd_adj, 'ko', 'LineWidth',5); hold on
+hold on; plot(extreme_q_grad_adj,extreme_wspd_adj, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+contour(a1q_hr,a2q_hr,advection_ratio_percent_q_hr',[50 100],'-k') 
+contour(a1q_hr,a2q_hr,advection_ratio_percent_q_hr',[150 200],'-k')
+grid on; xlabel('horizontal difference of q (g kg^{-1}km^{-1})'); ylabel('wind speed (km hr^{-1})')
+aa1 = (nclCM('MPL_rainbow',(size(min_color_percent_q:step_color_percent_q:max_color_percent_q,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('BlGrYeOrReVi200',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_percent_q:step_color_percent_q:max_color_percent_q];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa1)
+hcb_uncert=colorbar;
+colorTitleHandle_uncert = get(hcb_uncert,'Title');
+titleString_uncert = '%'; 
+set(colorTitleHandle_uncert ,'String',titleString_uncert);
+
+
+%% now in m/s
+
+figure('position',[10,10,1500,1500],'Renderer','painters');
+
+subplot(2,2,1)
+title('a) \theta advection')
+hold on
+%[a1T,a2T] = meshgrid(T_gradient_grid,wspd_grid_adj);
+%subplot(3,1,1)
+contourf(a1T_ms,a2T_ms,advT_hr,[min_color_adv_T:step_color_adv_T:max_color_adv_T],'LineColor','none')
+%hold on; plot(typical_q_grad,typical_wspd, 'ko', 'LineWidth',5); hold on
+%hold on; plot(extreme_q_grad,extreme_wspd, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+%contour(a1q,a2q,advection_ratio_percent_q',[50 100],'-k') 
+%contour(a1q,a2q,advection_ratio_percent_q',[150 200],'-k')
+grid on; xlabel('horizontal difference of \theta (K km^{-1})'); ylabel('wind speed (m s^{-1})')
+aa12 = (nclCM('MPL_rainbow',(size(min_color_adv_T:step_color_adv_T:max_color_adv_T,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('BlGrYeOrReVi200',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_adv_T:step_color_adv_T:max_color_adv_T];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa12)
+hcb_Tadv=colorbar;
+colorTitleHandle_Tadv = get(hcb_Tadv,'Title');
+titleString_Tadv = '[K hr^{-1}]'; 
+set(colorTitleHandle_Tadv ,'String',titleString_Tadv);
+
+
+subplot(2,2,2)
+title('b) q advection')
+hold on
+contourf(a1q_ms,a2q_ms,advQ_hr,[min_color_adv_q:step_color_adv_q:max_color_adv_q],'LineColor','none')
+%hold on; plot(typical_q_grad_adj,typical_wspd_adj, 'ko', 'LineWidth',5); hold on
+%hold on; plot(extreme_q_grad_adj,extreme_wspd_adj, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+%contour(a1q,a2q,advection_ratio_percent_q',[50 100],'-k') 
+%contour(a1q,a2q,advection_ratio_percent_q',[150 200],'-k')
+grid on; xlabel('horizontal difference of q (g kg^{-1}km^{-1})'); ylabel('wind speed (m s^{-1})')
+aa11 = (nclCM('MPL_rainbow',(size(min_color_adv_q:step_color_adv_q:max_color_adv_q,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('BlGrYeOrReVi200',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_adv_q:step_color_adv_q:max_color_adv_q];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa11)
+hcb_Qadv=colorbar;
+colorTitleHandle_Qadv = get(hcb_Qadv,'Title');
+titleString_Qadv = '[g kg^{-1} hr^{-1}]'; 
+set(colorTitleHandle_Qadv ,'String',titleString_Qadv);
+
+
+subplot(2,2,3)
+title('c) uncertainty ratio (\theta advection) ')
+hold on
+%subplot(3,1,1)
+contourf(a1T_ms,a2T_ms,advection_ratio_percent_T_hr',[min_color_percent_T:step_color_percent_T:max_color_percent_T],'LineColor','none')
+hold on; plot(typical_T_grad,typical_wspd, 'ko', 'LineWidth',5); hold on
+hold on; plot(extreme_T_grad,extreme_wspd, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+contour(a1T_ms,a2T_ms,advection_ratio_percent_T_hr',[50 100],'-k') % 
+contour(a1T_ms,a2T_ms,advection_ratio_percent_T_hr',[150 200],'-k')
+grid on; xlabel('horizontal difference of \theta (K km^{-1})'); ylabel('wind speed (m s^{-1})')
+aa1T = (nclCM('MPL_rainbow',(size(min_color_percent_T:step_color_percent_T:max_color_percent_T,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('CBR_coldhot',(size(min_color_percent_T:step_color_percent_T:max_color_percent_T,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_percent_T:step_color_percent_T:max_color_percent_T];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa1T)
+hcb_uncert=colorbar;
+colorTitleHandle_uncert = get(hcb_uncert,'Title');
+titleString_uncert = '%'; 
+set(colorTitleHandle_uncert ,'String',titleString_uncert);
+
+
+subplot(2,2,4)
+title('d) uncertainty ratio (q advection)')
+hold on
+%[a1q_hr,a2q_hr] = meshgrid(q_gradient_grid,wspd_grid_adj);
+%subplot(3,1,1)
+contourf(a1q_ms,a2q_ms,advection_ratio_percent_q_hr',[min_color_percent_q:step_color_percent_q:max_color_percent_q],'LineColor','none')
+hold on; plot(typical_q_grad,typical_wspd, 'ko', 'LineWidth',5); hold on
+hold on; plot(extreme_q_grad,extreme_wspd, 'ks', 'LineWidth',5); hold on
+%contour(a1,a2,RiB,[.25 100],'-k') % these thresholds RiBs are from Zhang et al 2014, most comun 0.25
+contour(a1q_ms,a2q_ms,advection_ratio_percent_q_hr',[50 100],'-k') 
+contour(a1q_ms,a2q_ms,advection_ratio_percent_q_hr',[150 200],'-k')
+grid on; xlabel('horizontal difference of q (g kg^{-1}km^{-1})'); ylabel('wind speed (m s^{-1})')
+aa1 = (nclcmap('MPL_rainbow',(size(min_color_percent_q:step_color_percent_q:max_color_percent_q,2))));
+%aa1 = (nclcmap('precip_11lev',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1 = (nclcmap('BlGrYeOrReVi200',(size(min_color_percent:step_color_percent:max_color_percent,2)-1)));
+%aa1(end,:) = [.8 .8 .8];
+c = colorbar;  c.Ticks = [min_color_percent_q:step_color_percent_q:max_color_percent_q];
+%c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
+colormap(aa1)
+hcb_uncert=colorbar;
+colorTitleHandle_uncert = get(hcb_uncert,'Title');
+titleString_uncert = '%'; 
+set(colorTitleHandle_uncert ,'String',titleString_uncert);
+
+
+
+
+%% what I was doing without any Dave code...
+
+% path_adv_unc = '/home/aburgosc/Documents/ideasPaper/output/Advection/uncertainties/files_typical_values/';
+% 
+% 
+% read_uncert_advhum = nanmean([csvread([path_adv_unc, '20220616humidAdvection_uncert.txt']),...
+%     csvread([path_adv_unc, '20220617humidAdvection_uncert.txt'])]);
+% 
+% 
+% wind_speeds = 0.1:0.1:10; % in m/s from 0.1m/s to 20 m/s
+% 
+% q_specificHum_gradient = 0.0001:0.001:0.3; % in g/kg/m from 0 to 0.3g/kg/m=3 g/kg/km
+% uncert_delta_q_MC = 0.00004; % K/m
+% 
+% vel_uncert = 0.8; %m/s
+% 
+% for i=1:length(wind_speeds)
+%     for j=1:length(q_specificHum_gradient)
+%         humidity_adv(i,j) = wind_speeds(i).*q_specificHum_gradient(j);
+%         humidity_adv_unc(i,j) = sqrt((vel_uncert*q_specificHum_gradient(j)).^2+(wind_speeds(i)*uncert_delta_q_MC).^2);
+%     end
+% end
+% 
+% fract_unc = humidity_adv_unc./humidity_adv;
+% 
+% figure; pcolor(q_specificHum_gradient,wind_speeds,humidity_adv_unc); shading interp; colorbar
+% figure; pcolor(q_specificHum_gradient,wind_speeds,fract_unc); shading interp; colorbar
+% figure; pcolor(q_specificHum_gradient,wind_speeds,log10(fract_unc)); shading interp; colorbar; caxis([-1 1])
+% 
