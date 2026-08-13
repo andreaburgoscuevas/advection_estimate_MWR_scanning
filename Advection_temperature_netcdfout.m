@@ -1,7 +1,5 @@
-% Code based on AdvectionTemperature...25.m, however for paper 1 of only
-% advection with no mixing diagram restrictions and now with the winds an
-% thermal info separately to look at the advection ingredients
-
+% Code that estimates temperature advection from DWL and MWR at 30° elevation. Zonal and meridional 
+%differences are calculated height and time-resolved and matched with WDL data to estimate advection
 
 clear all
 close all
@@ -10,8 +8,8 @@ close all
 year=2022;
 month=6;
 day=19;
-pathfigs = '/home/andreaburgos/Documentos/Koeln/output_unam/';
-pathoutnet = '/home/andreaburgos/Documentos/Koeln/output_unam/github_net_out';
+pathfigs = '/path/to/outputfigures/';
+pathoutnet = '/path/to/outputNetCDF/';
 
 temporal_resolution = .5; % en hora decimal para juntar tiempos MWR y WDL
 % vertical resolution:
@@ -62,20 +60,12 @@ g_0 = 9.8; % m/s2
 R_gas = 287.0; % J/(kgK) for dry atmosphere
 c_p = 1004; %  J/(kgK) Holton
 
-% pathABLH = '/home/aburgosc/Documents/ideasPaper/output/RiB_withClassifWinds/';
-% file_ABLH_RiB = [pathABLH, 'ABLHs_', num2str(year), sprintf('%02d', month),...
-%     sprintf('%02d',day),'_ABLHRiB025_ABLHRiB05_CBLHTM.nc'];
-% ABLHRiB = ncread(file_ABLH_RiB, 'ABLHs');
-% ABLHRiB_025 = smooth(ABLHRiB(1,:));
-% ABLHRiB_05 = smooth(ABLHRiB(2,:));
-% ABLHRiBtime = ncread(file_ABLH_RiB, 'time');
 
 %% 1. stating paths and defining variables and constants that are gonna be used:
 
-path_root_hatpro = '/home/andreaburgos/Documentos/Koeln/Data/tophat/';
-path_root_lidar = '/home/andreaburgos/Documentos/Koeln/Data/wind_lidar/';
-
-pathoutAdvection = '/home/andreaburgos/Documentos/Koeln/output_unam/Advection/';
+path_root_hatpro = '/path/to/dataMWR/';
+path_root_lidar = '/path/to/dataDWL/';
+pathoutAdvection = '/path/to/outputAdvection/';
 pathoutUncertainty = pathoutAdvection;
 %pathoutAdvection = pathoutAdvection;
 
@@ -83,7 +73,7 @@ pathoutUncertainty = pathoutAdvection;
 % caso que se pase al siguiente dia
 
 %filenames:
-%     filenameMWR_hua = (dir(strcat([daypath_MWR, '/sups_joy_mwr00_l2_hua*.nc'])));
+
     filenameMWR_taa = (dir(strcat([path_root_hatpro, 'sups_joy_mwr00_l2_ta_p00_',...
         num2str(year),sprintf('%02d', month),sprintf('%02d',day) ,'*.nc']))); 
     filenameMWR_ta=filenameMWR_taa(1);
@@ -131,7 +121,7 @@ for i=1:length(flagMWR_ta); if isnan(flagMWR_ta(i))==0; tempMWR_ta(:,i)=NaN; end
 
 rawtimeMWR_ta = double(ncread(fileMWR_ta, 'time'));
 
-% writing time in a way that makes sense: (copied from RiB code)
+% writing time in a way that makes sense: 
 secsin1day=60*60*24;
 base=datenum(1970,1,1); % according to what the cdf file says with ncdisp(file)
 datetimefileMWR = datestr(rawtimeMWR_ta/secsin1day+base);
@@ -173,22 +163,11 @@ for i=1:szv1; for j=1:szv2
         end
 end; end
 
-% % taking out velocity outlyers:
-% [vz1 vz2]= size(velocity_error);
-% for i=1:vz1
-%     for j=1:vz2
-%         if velocity_error(i,j)>1.5
-%             velocity_error(i,j) = NaN;
-%         end
-%     end
-% end
-
 %% ABL classif TM
 
-%path_bl = '/data/hatpro/jue/cloudnet/juelich/products/bl-classification/ABLclassification/';
-path_bl = '/home/andreaburgos/Documentos/Koeln/Data/wind_lidar/';
-%dates = [20150215 20150216 20150217 20150218 20150505 20150506 20150507 20150508 ...
- %   20190204 20190205 20190206 20190207 20190622 20190623 20190624 20190625];
+%path_bl = '/path/to/data/ABLclassification/';
+path_bl = '/path/to/dataABLclassif/';
+
 data_bl = [];
 %for i = 1:length(dates)
 %i=14;
@@ -397,8 +376,6 @@ end
      for t=1:tiempo
          for an=1:angulo
 
-
-
          if  azim2D(an,t) >=350 || azim2D(an,t) <=10 %azimuth=0 North
              tempNorth_all(h,an,t) = tempMat3D(h,an,t);
          else tempNorth_all(h,an,t) = NaN;
@@ -431,7 +408,6 @@ end
      end
  end
 
-
 %just checking there are no zeros:
  for h=1:altura
      for an=1:angulo
@@ -454,38 +430,12 @@ end
 distanciaenaltura = nanmean(distaHoriz2D');
 temp_mean_direct = (tempNorth+tempSouth+tempEast+tempWest)./4;
 
-
 %% Making gradients of temperature and distance:
 
 zonalTemperaturedif = tempEast-tempWest;
 meridionalTemperaturedif = (tempNorth-tempSouth);
 
 zonaldistdif = 2*distanciaenaltura; meridionaldistdif = 2*distanciaenaltura; disthoriz = zonaldistdif;
-
-% % filtro para gradientes no realistas:
-%  for h=1:altura
-%      for t=2:tiempo-1
-%         if abs(zonalTemperaturedif(h,t))> abs(nanmean([zonalTemperaturedif(h,t-1),zonalTemperaturedif(h,t+1)]))+...
-%                 abs(std(zonalTemperaturedif(h,t-1:t+1)))
-%             zonalTemperaturedif(h,t) = nanmean([zonalTemperaturedif(h,t-1),zonalTemperaturedif(h,t+1)]);
-%         end
-%         if abs(meridionalTemperaturedif(h,t))> abs(nanmean([meridionalTemperaturedif(h,t-1),meridionalTemperaturedif(h,t+1)]))+...
-%                 abs(std(meridionalTemperaturedif(h,t-1:t+1)))
-%             meridionalTemperaturedif(h,t) = nanmean([meridionalTemperaturedif(h,t-1),meridionalTemperaturedif(h,t+1)]);
-%         end
-% 
-% %         if meridionalTemperaturedif(h,t)> 0.3 && heightMWR_ta(h)< maxheight_surf
-% %             meridionalTemperaturedif(h,t) = NaN;
-% %         end
-% %         if (zonalTemperaturedif(h,t))> 0.3 && heightMWR_ta(h)< maxheight_surf
-% %             zonalTemperaturedif(h,t) = NaN;
-% %         end
-% 
-%     end
-%  end
-
- %zonalTemperaturedif=fillmissing(zonalTemperaturedif,'nearest'); 
- %meridionalTemperaturedif=fillmissing(meridionalTemperaturedif,'nearest'); % smooth made in time
 
 
 %% so I have a zonal and meridional temperature gradients of MWR data:
@@ -535,51 +485,8 @@ uzonalvel = u; vmeridionalvel = v; heightWDL;
 datetimeWDL; decimaltimeWDL = hour(datetimeWDL)+ minute(datetimeWDL)./60+.3;
 [sztw, szhw] = size(u); thresholdVsurf=30; thresholdUsurf=30; thresholdU=30;
 
-% % now I need to do filters cause the wind like this is not physically realistic
-% for tw=1:sztw; for hw=1:szhw
-%        if (heightWDL(hw) < maxheight_surf) && (abs(uzonalvel(tw,hw))>=thresholdUsurf)
-%             uzonalvel(tw,hw)=NaN; 
-%         end
-%        if (heightWDL(hw) < maxheight_surf) && (abs(vmeridionalvel(tw,hw))>=thresholdVsurf)
-%             vmeridionalvel(tw,hw)=NaN; 
-%        end
-% end; end
-% 
-
 figure; pcolor(datetimeWDL,heightWDL,uzonalvel'); shading flat; caxis([-10, 10])
 figure; pcolor(datetimeWDL,heightWDL,vmeridionalvel'); shading flat; caxis([-10, 10])
-
-
-%uzonalvel=fillmissing(uzonalvel,'linear',1); vmeridionalvel=fillmissing(vmeridionalvel,'linear',1); % smooth made in time
-%uzonalvel=fillmissing(uzonalvel,'nearest'); vmeridionalvel=fillmissing(vmeridionalvel,'nearest'); % smooth made in time
-%uzonalvel=fillmissing(uzonalvel,'movmean',10); vmeridionalvel=fillmissing(vmeridionalvel,'movmean',10); % smooth made in time
-
-
-% mean_utime=nanmean(uzonalvel); mean_vtime= nanmean(vmeridionalvel); eps=3;
-% for tw=eps:sztw-eps; for hw=1:szhw
-%         if  (isnan(uzonalvel(tw,hw))==1)
-%             uzonalvel(tw,hw)=nanmean(uzonalvel(tw-eps+1:tw+eps,hw));
-%         end
-%         if  (isnan(v(tw,hw))==1)
-%             %vmeridionalvel(tw,hw)=nanmean(vmeridionalvel(tw-eps+1:tw+eps,hw));
-%             vmeridionalvel(tw,hw)=NaN;
-%         end
-% %        if (heightWDL(hw) < maxheight_surf) && ((u(tw,hw))>=thresholdVsurf-2)
-% %             uzonalvel(tw,hw)=NaN; %vmeridionalvel(tw,hw)=NaN;
-% %         end
-% end; end
-
-% t_indi_m = 9; h_indi_m = 8;
-% mean_uvelsurf= nanmean(nanmean(u(1:t_indi_m,1:h_indi_m))); mean_vvelsurf= nanmean(nanmean(v(1:t_indi_m,1:h_indi_m)));
-% 
-% for he = 2:round(1.5*h_indi_m)
-%   for ti = 1:2*t_indi_m
-%      uzonalvel(ti,he) =  nanmean([min([uzonalvel(ti,he-1),uzonalvel(ti,he)]), mean_uvelsurf,...
-%          min([uzonalvel(ti,he-1),uzonalvel(ti,he)]),uzonalvel(ti,he),uzonalvel(ti,he),uzonalvel(ti,he)]);
-%      %vmeridionalvel(ti,he) =  nanmean([vmeridionalvel(ti,he), mean_vvelsurf]);
-%   end
-% end
-
 
 for tw=1:sztw; for hw=1:szhw
         if abs(uzonalvel(tw,hw))>= thresholdU
@@ -590,7 +497,6 @@ for tw=1:sztw; for hw=1:szhw
         end
 end
 end
-
 
 %% figures velocity:
 
@@ -614,9 +520,6 @@ end
 for t=1:ti; for h=1:hi
             if heightWDL(h)<minheight_surf; u_ABL(t,h)=NaN;v_ABL(t,h)=NaN; end
 end; end
-
-
-addpath('/home/andreaburgos/Documentos/Koeln/mlocal')
 
 % NCV_banded'
 figure('position',[1,1,1700,350],'Renderer','painters');
@@ -780,8 +683,6 @@ for tiempoMerge =tiempoInicial:length(timegrid)
 
 end % here the homogenization of temporal resolution ends
 
-
-
 %% now make the averages in the two height levels
 
 if smoothtimeseries==1 % do we vant or not to smooth the timeseries but in this loop they are defined either way
@@ -907,32 +808,12 @@ tempEast_fitfit=tempEast_fitfit'; tempWest_fitfit=tempWest_fitfit'; tempNorth_fi
 
 % horizontal temperature differences are defined:
 
-% first a filter is made to disregard data that is so close together that
-% it does not make sense that the difference is too big:
-% for t=1:lengthtime; for h=1:lengthHeight
-%         if (tempNorth_fitfit(h,t)-tempSouth_fitfit(h,t))>0.5 && (heightfitfit(h)<maxheight_surf)
-%             tempNorth_fitfit(h,t)=NaN; tempSouth_fitfit(h,t)=NaN;
-%         end
-%         if (tempEast_fitfit(h,t)-tempWest_fitfit(h,t))>0.5 && (heightfitfit(h)<maxheight_surf)
-%             tempEast_fitfit(h,t)=NaN; tempWest_fitfit(h,t)=NaN;
-%         end
-% end; end
 
 for t=1:lengthtime; for h=1:lengthHeight
         Tdif_zonal(h,t)=(tempEast_fitfit(h,t)-tempWest_fitfit(h,t))./(disthoriz_fit(h));
         Tdif_meridional(h,t)=(tempNorth_fitfit(h,t)-tempSouth_fitfit(h,t))./(disthoriz_fit(h));
 
 end; end
-
-%%
-% meanTdifmeridini = nanmean(nanmean(Tdif_meridional(1:10,1:6)));
-% for ha=1:lengthHeight; for ta=1:lengthtime
-%         %Tdif_zonal(h,t)=(tempEast_fitfit(h,t)-tempWest_fitfit(h,t))./(disthoriz_fit(h));
-%         if (Tdif_meridional(ha,ta)) > 0.02 && heightfitfit(ha)< maxheight_surf
-%             Tdif_meridional(ha,ta)=meanTdifmeridini; 
-%         end
-% end; end
-
 
 %% uncertainties:
 %mindist=500; % m this is the minimum horiz dist to estimate advection
@@ -981,21 +862,12 @@ if thermal_smooth==1
     meanTdif_zon = nanmean(Tdif_zonal'); stdTdif_zon = nanstd(Tdif_zonal'); 
     meanTdif_mer = nanmean(Tdif_meridional'); stdTdif_mer = nanstd(Tdif_meridional');
      for h=1:lengthHeight 
-%          for t=1:lengthtime
-%             if abs(Tdif_zonal(h,t)) > abs(meanTdif_zon(h))+ numTd_std_z*stdTdif_zon(h); Tdif_zonal(h,t)=NaN; end
-%             if abs(Tdif_meridional(h,t)) > abs(meanTdif_mer(h))+ numTd_std_m*stdTdif_mer(h); Tdif_meridional(h,t)=NaN; end
-%     %         Tdif_zonal(h,t)=(tempEast_fitfit(h,t)-tempWest_fitfit(h,t))./(disthoriz_fit(h));
-%     %         Tdif_meridional(h,t)=(tempNorth_fitfit(h,t)-tempSouth_fitfit(h,t))./(disthoriz_fit(h));
-%         end
     %Tdif_zonal(h,:)= smooth((Tdif_zonal(h,:))); Tdif_meridional(h,:)= smooth((Tdif_meridional(h,:)));
     
     Tdif_zonal(h,:)= movmean((Tdif_zonal(h,:)),numMovmean); Tdif_meridional(h,:)= movmean((Tdif_meridional(h,:)),numMovmean);
     end
 
 end
-
-
-%Tdif_meridional=fillmissing(Tdif_meridional,'nearest'); 
 
 % Tdif_zonal and Tdif_meridional are in K/m for now, here 1000 multiplication converting from m to km
 Tdif_zonal = 1000.*Tdif_zonal; Tdif_meridional = 1000.*Tdif_meridional; % this is in K/km
@@ -1167,7 +1039,6 @@ hcb_tempdif=colorbar;
 colorTitleHandle_tempdif = get(hcb_tempdif,'Title');
 titleString_tempdif = '[K hr^{-1}]';
 set(colorTitleHandle_tempdif ,'String',titleString_tempdif);
-
 
 subplot(3,1,2); 
 pcolor(timegrid,heightfitfit,advection_meridional); title('v\cdot(\Delta\theta/\Deltay)')
@@ -1387,119 +1258,3 @@ minH_surf=minheight_surf;  maxH_surf=maxheight_surf; %timegrid=timegrid(1:end-4)
 minH_upperabl=minheight_upperabl;  maxH_upperabl=maxheight_upperabl; 
 mintemp=290; maxtemp=310; scale=1;
 
-% figure('position',[1,1,1400,1000],'Renderer','painters');
-% subplot(2,2,1)
-% % title(['Temp. directions (',num2str(minH_adv),'-', num2str(maxH_adv),')',...
-% %     num2str(year),sprintf('%02d', month),sprintf('%02d',day)])
-% plot(timegrid,tempEast_timeseries_upperabl,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempWest_timeseries_upperabl,'r', 'LineWidth',1.5); grid on
-% hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries,v_upperabl_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries1,v_upperabl_timeseries1, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries2,v_upperabl_timeseries2, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries3,v_upperabl_timeseries3, scale, 'Color', Gray,'LineWidth',1.5);
-% legend(['\theta East(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)';...
-%     '\theta West(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)';...
-%     'Wind Vector(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)'], 'Location','northeast')
-% title(['(',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')             zonal \theta             '])
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); ylim([mintemp+2 maxtemp]); 
-% 
-% subplot(2,2,2); plot(timegrid,tempNorth_timeseries_upperabl,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempSouth_timeseries_upperabl,'r', 'LineWidth',1.5); grid on
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); %ylim([mintemp maxtemp]);
-% hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries,v_upperabl_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries1,v_upperabl_timeseries1, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries2,v_upperabl_timeseries2, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries3,v_upperabl_timeseries3, scale, 'Color', Gray,'LineWidth',1.5);
-% legend(['\theta North(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),'m)';...
-%     '\theta South(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),'m)';...
-%     'Wind Vector(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)'], 'Location','northeast')
-% title(['meridional \theta ']); ylim([mintemp+2 maxtemp]); 
-% 
-% subplot(2,2,3)
-% title(['\theta directions (',num2str(minH_surf),'-', num2str(maxH_surf),')',...
-%     num2str(year),sprintf('%02d', month),sprintf('%02d',day)])
-% plot(timegrid,tempEast_timeseries_surf,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempWest_timeseries_surf,'r', 'LineWidth',1.5); grid on
-% %title(['zonal T (',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')'])
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray,'LineWidth',1.5);
-% hold on; quiver(timegrid,scaling_velTemp_surfH-1,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries2,v_surf_timeseries2, scale, 'Color', Gray2,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries3,v_surf_timeseries3, scale, 'Color', Gray3,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries4,v_surf_timeseries4, scale, 'Color', Gray4,'LineWidth',1.5);
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); %ylim([mintemp-4 maxtemp-2]);
-% legend(['\theta East(',num2str(minH_surf),'-', num2str(maxH_surf),' m)';...
-%     '\theta West(',num2str(minH_surf),'-', num2str(maxH_surf),' m)';...
-%     'Wind Vector(',num2str(minH_surf),'-', num2str(maxH_surf),' m)'], 'Location','northeast'); ylim([mintemp maxtemp-2]); 
-% 
-% subplot(2,2,4); plot(timegrid,tempNorth_timeseries_surf,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempSouth_timeseries_surf,'r', 'LineWidth',1.5); grid on
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray,'LineWidth',1.5);
-% hold on; quiver(timegrid,scaling_velTemp_surfH-1,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries2,v_surf_timeseries2, scale, 'Color', Gray2,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries3,v_surf_timeseries3, scale, 'Color', Gray3,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries4,v_surf_timeseries4, scale, 'Color', Gray4,'LineWidth',1.5);
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); %ylim([mintemp-4 maxtemp-2]);
-% %title(['meridional T (',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')'])
-% legend(['\theta North(',num2str(minH_surf),'-', num2str(maxH_surf),'m)';...
-%     '\theta South(',num2str(minH_surf),'-', num2str(maxH_surf),'m)';...
-%     'Wind Vector(',num2str(minH_surf),'-', num2str(maxH_surf),' m)'], 'Location','northeast'); ylim([mintemp maxtemp-2]); 
-% 
-% 
-% saveas(figure(8),[pathfigs,'theta_directions_timeSeries_vel_layers_...' ...
-%      num2str(year),sprintf('%02d', month),sprintf('%02d',day),'.png'])
-
-% 
-% figure('position',[1,1,1200,1000],'Renderer','painters'); 
-% 
-% subplot(2,2,1:2)
-% plot(timegrid,advection_zonal_allabl, 'Color', bluebonito,'LineWidth',2); hold on; 
-% plot(timegrid, advection_meridional_allabl,  'color', purplebonito, 'LineWidth',2); hold on
-% %plot(timegrid,advection_total_allabl,'r', 'LineWidth',1); grid on
-% xlabel('time [hr]'); xlim([starttime, endtime]); ylabel('\theta advection [K hr^{-1}]'); ylim([minlim, maxlim])
-% % hold on
-% % fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-% %      [0.7 0.1 0.2], 'FaceAlpha', 0.1);
-% hold on; grid on;
-% fill([timegrid fliplr(timegrid)], [advection_zonal_allabl-sigma_advection_temp_adj_zonal...
-%     fliplr(advection_zonal_allabl+sigma_advection_temp_adj_zonal)], ...
-%      bluebonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% hold on; grid on
-% fill([timegrid fliplr(timegrid)], [advection_meridional_allabl-sigma_advection_temp_adj_meridional...
-%     fliplr(advection_meridional_allabl+sigma_advection_temp_adj_meridional)], ...
-%      purplebonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% legend([ 'u\cdot(\Delta\theta/\Deltax)                        '; 'uncertainty of u\cdot(\Delta\theta/\Deltax)         '])
-%     %'u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)']); 
-% title(['                                                     (',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')      ' ...
-%     ,'\theta advection in ABL (',num2str(minheight_surf),'-', num2str(maxheight_upperabl),' m) ']);
-% 
-% %subplot(2,2,2)
-% %plot(timegrid, advection_meridional_allabl,  'color', purplebonito, 'LineWidth',2); hold on
-% %plot(timegrid,advection_total_allabl,'r', 'LineWidth',1); grid on
-% % title(['(',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')      ' ...
-% %     ,'\theta advection in ABL (',num2str(minheight_surf),'-', num2str(maxheight_upperabl),' m) ']);
-% % legend([ '     v\cdot(\Delta\theta/\Deltay)                        ';...
-% %     'u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)']); 
-% %xlabel('time [hr]'); xlim([starttime, endtime]); ylabel('\theta advection [K hr^{-1}]'); ylim([minlim, maxlim])
-% % hold on
-% % fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-% %      [0.7 0.1 0.2], 'FaceAlpha', 0.1);
-% % hold on; grid on
-% % fill([timegrid fliplr(timegrid)], [advection_meridional_allabl-sigma_advection_temp_adj_meridional...
-% %     fliplr(advection_meridional_allabl+sigma_advection_temp_adj_meridional)], ...
-% %      purplebonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% % legend([ 'v\cdot(\Delta\theta/\Deltay)                        '; 'uncertainty of v\cdot(\Delta\theta/\Deltay)         '])
-% 
-% subplot(2,2,3:4)
-% plot(timegrid,advection_total_allabl,'color', redbonito, 'LineWidth',2); grid on
-% % title(['(',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')      ' ...
-% %     ,'\theta advection in ABL (',num2str(minheight_surf),'-', num2str(maxheight_upperabl),' m) ']);
-% xlabel('time [hr]'); xlim([starttime, endtime]); ylabel('\theta advection [K hr^{-1}]'); ylim([minlim, maxlim])
-% % hold on
-% % fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-% %      [0.7 0.1 0.2], 'FaceAlpha', 0.1);
-% hold on
-% fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj...
-%     fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-%      redbonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% legend([ '       u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)        '; ...
-%     'uncertainty of u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)']); 
