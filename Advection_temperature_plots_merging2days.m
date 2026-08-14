@@ -7,8 +7,8 @@ day1=18; day2=19;
 horaini = 21; horafin=10;
 starttime=horaini; endtime=horafin;
 
-path_netcdf= '/home/andreaburgos/Documentos/Koeln/output_unam/netcdf_out/';
-path_figs = '/home/andreaburgos/Documentos/Koeln/output_unam/figures_github/';
+path_netcdf= '/path/to/outputNetCDF/';
+path_figs = '/path/to/outputFigures/';
 
 set(groot, 'DefaultAxesFontSize', 13);
 set(groot, 'DefaultTextFontSize', 13);
@@ -123,13 +123,6 @@ ax.XAxis.LabelHorizontalAlignment = 'left';
 saveas(figure(1),[path_figs,num2str(year),sprintf('%02d', month),'_',sprintf('%02d', day1),...
     'and',sprintf('%02d', day2),'_theta_directions_2days.png'])
 
-% [szx, szy] = size(thetaSouth2days);
-% for i=1:szx; for j=1:szy
-%         theta_all_2days(i,j)=nanmean([thetaNorth2days(i,j),thetaSouth2days(i,j),...
-%             thetaEast2days(i,j),thetaWest2days(i,j)]);
-% end; end
-
-
 %% Temp dif zonal and meridional
 
 file_thetadif_zonalmeridional_day1 = ([path_netcdf,num2str(year),sprintf('%02d', month),sprintf('%02d', day1), '_theta_dif_zonal_meridional.nc']);
@@ -230,22 +223,10 @@ wd_abl = mod(270 - atan2d(v_layer_abl,u_layer_abl),360);
 dirEdges = 0:10:360; spdEdges= [0 5 10 15 20];
 N = histcounts2(ws_abl,wd_abl,spdEdges,dirEdges);
 N = N/sum(N(:))*100;
-addpath('/home/andreaburgos/Documentos/Koeln/ideasPaper-20260204T224132Z-1-002/ideasPaper/mlocal_in_unam/wind_rose')
-savepath
 
 spdEdges = [0 2 4 6 8 10 15 20]; nSpeedBins = length(spdEdges)-1; 
  colors = jet(nSpeedBins); %colors = parula(nSpeedBins);
 bottom = zeros(1,size(N,2));
-
-% figure
-% polarhistogram(deg2rad(wd_abl),edges*pi/180); title('500-1000 m')
-%idx_1000a3000 = altura >= 1000 & altura <= 3000;
-%u_layer_1000a3000 = mean(u_wind(idx_1000a3000,:),1,'omitnan');
-%v_layer_1000a3000 = mean(v_wind(idx_1000a3000,:),1,'omitnan');
-%ws_1000a3000 = hypot(u_layer_1000a3000,v_layer_1000a3000);
-%wd_1000a3000 = mod(270 - atan2d(v_layer_1000a3000,u_layer_1000a3000),360);
-%edges = 0:22.5:360;
-%%
 
 % figure
 figure('position',[1,1,1500,550],'Renderer','painters');
@@ -310,8 +291,6 @@ pax.ThetaDir = 'clockwise';
 legend%([' 0-5 m s^{-1}'; '5-10 m s^{-1}'; '10-15 m s^{-1}'; '15-20 m s^{-1}']);
 title('c)     from 0200 to 0400 UTC')
 end
-
-
 
 saveas(figure(3),[path_figs,num2str(year),sprintf('%02d', month),'_',sprintf('%02d', day1),...
     'and',sprintf('%02d', day2),'_wind_2days.png'])
@@ -450,7 +429,6 @@ end;end
 
 thetaZenith_timeseries = nanmean(thetaZenithABL);
 
-
 min_colorAdv= -12; max_colorAdv=-min_colorAdv; step_colorAdv =0.01;
 
 figure('position',[1,1,1000,3000],'Renderer','painters');
@@ -531,75 +509,3 @@ yticks(round(minheight_surf/100):200:maxheight_upperabl+extraabl)
 saveas(figure(5),[path_figs,num2str(year),sprintf('%02d', month),'_',sprintf('%02d', day1),...
     'and',sprintf('%02d', day2),'_Advection_theta_2days.png'])
 
-
-
-
-
-
-
-
-% minH_surf=minheight_surf;  maxH_surf=maxheight_surf; %timegrid=timegrid(1:end-4);
-% minH_upperabl=minheight_upperabl;  maxH_upperabl=maxheight_upperabl; 
-% mintemp=290; maxtemp=310; scale=1;
-
-% figure('position',[1,1,1400,1000],'Renderer','painters');
-% subplot(2,2,1)
-% % title(['Temp. directions (',num2str(minH_adv),'-', num2str(maxH_adv),')',...
-% %     num2str(year),sprintf('%02d', month),sprintf('%02d',day)])
-% plot(timegrid,tempEast_timeseries_upperabl,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempWest_timeseries_upperabl,'r', 'LineWidth',1.5); grid on
-% hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries,v_upperabl_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries1,v_upperabl_timeseries1, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries2,v_upperabl_timeseries2, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries3,v_upperabl_timeseries3, scale, 'Color', Gray,'LineWidth',1.5);
-% legend(['\theta East(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)';...
-%     '\theta West(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)';...
-%     'Wind Vector(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)'], 'Location','northeast')
-% title(['(',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')             zonal \theta             '])
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); ylim([mintemp maxtemp]); 
-% 
-% subplot(2,2,2); plot(timegrid,tempNorth_timeseries_upperabl,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempSouth_timeseries_upperabl,'r', 'LineWidth',1.5); grid on
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); %ylim([mintemp maxtemp]);
-% hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries,v_upperabl_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries1,v_upperabl_timeseries1, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries2,v_upperabl_timeseries2, scale, 'Color', Gray,'LineWidth',1.5);
-% % hold on; quiver(timegrid,scaling_velTemp_upperablH,u_upperabl_timeseries3,v_upperabl_timeseries3, scale, 'Color', Gray,'LineWidth',1.5);
-% legend(['\theta North(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),'m)';...
-%     '\theta South(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),'m)';...
-%     'Wind Vector(',num2str(minH_upperabl),'-', num2str(maxH_upperabl),' m)'], 'Location','northeast')
-% title(['meridional \theta ']); ylim([mintemp+2 maxtemp]); 
-% 
-% subplot(2,2,3)
-% title(['\theta directions (',num2str(minH_surf),'-', num2str(maxH_surf),')',...
-%     num2str(year),sprintf('%02d', month),sprintf('%02d',day)])
-% plot(timegrid,tempEast_timeseries_surf,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempWest_timeseries_surf,'r', 'LineWidth',1.5); grid on
-% %title(['zonal T (',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')'])
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray,'LineWidth',1.5);
-% hold on; quiver(timegrid,scaling_velTemp_surfH-1,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries2,v_surf_timeseries2, scale, 'Color', Gray2,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries3,v_surf_timeseries3, scale, 'Color', Gray3,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries4,v_surf_timeseries4, scale, 'Color', Gray4,'LineWidth',1.5);
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); %ylim([mintemp-4 maxtemp-2]);
-% legend(['\theta East(',num2str(minH_surf),'-', num2str(maxH_surf),' m)';...
-%     '\theta West(',num2str(minH_surf),'-', num2str(maxH_surf),' m)';...
-%     'Wind Vector(',num2str(minH_surf),'-', num2str(maxH_surf),' m)'], 'Location','northeast'); ylim([mintemp maxtemp]); 
-% 
-% subplot(2,2,4); plot(timegrid,tempNorth_timeseries_surf,'b', 'LineWidth',1.5)
-% hold on; plot(timegrid,tempSouth_timeseries_surf,'r', 'LineWidth',1.5); grid on
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray,'LineWidth',1.5);
-% hold on; quiver(timegrid,scaling_velTemp_surfH-1,u_surf_timeseries,v_surf_timeseries, scale, 'Color', Gray1,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries2,v_surf_timeseries2, scale, 'Color', Gray2,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries3,v_surf_timeseries3, scale, 'Color', Gray3,'LineWidth',1.5);
-% %hold on; quiver(timegrid,scaling_velTemp_surfH,u_surf_timeseries4,v_surf_timeseries4, scale, 'Color', Gray4,'LineWidth',1.5);
-% xlim([starttime endtime]); ylabel('\theta [K]'); xlabel('time UTC [hours]'); %ylim([mintemp-4 maxtemp-2]);
-% %title(['meridional T (',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')'])
-% legend(['\theta North(',num2str(minH_surf),'-', num2str(maxH_surf),'m)';...
-%     '\theta South(',num2str(minH_surf),'-', num2str(maxH_surf),'m)';...
-%     'Wind Vector(',num2str(minH_surf),'-', num2str(maxH_surf),' m)'], 'Location','northeast'); ylim([mintemp maxtemp]); 
-% 
-% 
-% % saveas(figure(8),[pathfigs,'theta_directions_timeSeries_vel_layers_...' ...
-% %      num2str(year),sprintf('%02d', month),sprintf('%02d',day),'.png'])
-% 
