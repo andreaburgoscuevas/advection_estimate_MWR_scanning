@@ -27,14 +27,12 @@ meanTb_perturbation=0; sigmaTb_maxnoise =1; number_Tb_perturb =500; randomTb_noi
 % sigmaTb_ch08 = 0.15; sigmaTb_ch09 = 0.15; sigmaTb_ch10 = 15; sigmaTb_ch11 = 0.15;
 % sigmaTb_ch12 = 0.1; sigmaTb_ch13 = 0.08; sigmaTb_ch14 = 0.06; % values Hot Load T Boeck
 
-path_coeffs = '/home/andreaburgos/Documentos/Koeln/Data/tophat/';
-%path_Tb_day = ['/data/obs/site/jue/tophat/l1/', num2str(year),...
-    %'/',sprintf('%02d', month),'/',sprintf('%02d',day),'/']; 
-path_Tb_day = '/home/andreaburgos/Documentos/Koeln/Data/tophat/';
-path_covariance_mat = '/home/andreaburgos/Documentos/Koeln/ideasPaper-20260204T224132Z-1-002/ideasPaper/output/Advection/radiometricPerturbation/Retrieving05/';
+path_coeffs = '/path/to/data_coeffs/';
+path_Tb_day = '/path/to/dataMWR/';
+path_covariance_mat = '/path/to/data_covmat/';
 
-pathouTfigs = '/home/andreaburgos/Documentos/Koeln/submittiongAMT/revisions2026Aug/figures_new/';
-pathoutRadiometricUncertainty = '/home/aburgosc/Documents/ideasPaper/output/Advection/radiometricPerturbation/Retrieving07/';
+pathouTfigs = '/path/to/output/';
+pathoutRadiometricUncertainty = '/path/to/output/';
 
 Tb_day_file = (dir(strcat([path_Tb_day, 'sups_joy_mwr00_l1_tb_p00_*.nc'])));
 Tb_day = ([path_Tb_day, Tb_day_file.name]);
@@ -159,7 +157,6 @@ fifiW = find(isnan(TbWest13h(1,:))==0); TbWest13h=TbWest13h(:,fifiW);
 
 szTb1=length(Tb_covariance); szTb2=length(time30elev); count=0;
 
-
 %% separating Tb covariance matrices in Temperature and humidity ones and adding noise: 
 
 Tb_q_North13h=TbNorth13h(1:7,:); Tb_T_North13h=TbNorth13h(8:14,:);
@@ -178,7 +175,6 @@ for i=1:l; for j=1:ll
         if noise_matrix_W(i,j)>sigmaTb_maxnoise; noise_matrix_W(i,j)=sigmaTb_maxnoise; end
         if noise_matrix_W(i,j)<-sigmaTb_maxnoise; noise_matrix_W(i,j)= -sigmaTb_maxnoise; end
 end; end
-
 
 %% now matrix multiplication to get temperature and humidity
 
@@ -434,8 +430,6 @@ hold on; plot((1000.*mean(q_humZonal13h_profs')-(numstd/2)*uncert_Hum_std),heigh
  if noise== number_Tb_perturb; saveas(figure(52),[pathouTfigs,num2str(year),sprintf('%02d',month),sprintf('%02d',day),...
      'at',num2str(timeABLdeveloped), '00UTC_deltahumZonal_deltahumMeridional_MCretrievals','.png']); end
     
-
-
 
 if  number_Tb_perturb==500
 
