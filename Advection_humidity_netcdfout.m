@@ -5,14 +5,13 @@ clear all; close all
 % here we should enter the date to be analized:
 year=2021; month=10; day=8;
 
-inverse=0; % if this is 1, the angles East-West are the other way around
+inverse=0; % if this is 1, the angles East-West are the other way around, it depends on what orientation the azimuths in the MWR have
 
 yearT=2022; monthT=4; dayT=29; % usados alrededor de linea 390
 % antes con angulos al reves, despues con angulos convencionales East and West
 
-pathfigs = '/home/andreaburgos/Documentos/Koeln/output_unam/';
-addpath('/home/andreaburgos/Documentos/Koeln/mlocal') % para graficas ncl
-pathoutnet = '/home/andreaburgos/Documentos/Koeln/output_unam/github_net_out';
+pathfigs = '/path/to/outputfigures/';
+pathoutnet = '/path/to/outputNetCDF/';
 
 % heights in which time series are performed:
 minH_adv=600; maxH_adv=1300;
@@ -55,30 +54,13 @@ starttime=0; endtime=22; minhum=3; maxhum=10;
 scale=0.5; % scale for quiver wind vectors
 Gray = [128 128 128]/255;
 
-%%
-
-% setting the required fractions of CLBLH where it makes sense to estimate
-% advection as discussed with DT and UL :
-fraction_supABL = 0.8; fraction_infABL = 0.2;
-% 
-% pathABLH = '/home/aburgosc/Documents/ideasPaper/output/RiB_withClassifWinds/';
-% file_ABLH_RiB = [pathABLH, 'ABLHs_', num2str(year), sprintf('%02d', month),...
-%     sprintf('%02d',day),'_ABLHRiB025_ABLHRiB05_CBLHTM.nc'];
-% ABLHRiB = ncread(file_ABLH_RiB, 'ABLHs');
-% ABLHRiB_025 = smooth(ABLHRiB(1,:));
-% ABLHRiB_05 = smooth(ABLHRiB(2,:));
-% ABLHRiBtime = ncread(file_ABLH_RiB, 'time');
-
-
 %% 1. stating paths and defining variables and constants that are gonna be used:
 
+path_root_hatpro = '/path/to/MWRdata/';
+path_root_lidar = '/path/to/WDLdata/';
 
-path_root_hatpro = '/home/andreaburgos/Documentos/Koeln/Data/tophat/';
-path_root_lidar = '/home/andreaburgos/Documentos/Koeln/Data/wind_lidar/';
-
-pathoutAdvection = '/home/andreaburgos/Documentos/Koeln/output_unam/Advection/';
+pathoutAdvection = '/path/to/output/';
 pathoutUncertainty = pathoutAdvection;
-
 
 % aqui debo hacer un ciclo para saber si el filename esta empty y en ese
 % caso que se pase al siguiente dia
@@ -144,7 +126,7 @@ rawtimeMWR_ta = double(ncread(fileMWR_ta, 'time'));
 % IWV:
 prw = ncread(file_IWV,'prw'); % 'kg m-2' 'atmosphere_mass_content_of_water_vapor', These values denote the vertically integrated amount of water vapor from the surface to TOA.'
 
-% writing time in a way that makes sense: (copied from RiB code)
+% writing time in a way that makes sense: 
 secsin1day=60*60*24;
 base=datenum(1970,1,1); % according to what the cdf file says with ncdisp(file)
 datetimefileMWR = datestr(rawtimeMWR_hua/secsin1day+base);
@@ -208,8 +190,6 @@ q_specificHummin = (0.622.*e_partialpresmin)./(presimin-0.378.*e_partialpresmin)
 q_difmax = abs(q_specificHum-q_specificHummax); q_difmin = abs(q_specificHum-q_specificHummin);
 q_uncert = (q_difmax+q_difmin)./2;
 
-
-
 %% Reading variables from WDL: 
 
 %ncdisp(fileWDL);
@@ -228,10 +208,8 @@ delta_speed = ncread(fileWDL, 'delta_speed'); % uncertainty of horizontal wind s
 
 %% ABL classif TM
 
-%path_bl = '/data/hatpro/jue/cloudnet/juelich/products/bl-classification/ABLclassification/';
-path_bl = path_root_lidar;
-%dates = [20150215 20150216 20150217 20150218 20150505 20150506 20150507 20150508 ...
- %   20190204 20190205 20190206 20190207 20190622 20190623 20190624 20190625];
+path_bl = '/path/to/dataWDL_ABL_classification/';
+
 data_bl = [];
 %for i = 1:length(dates)
 %i=14;
@@ -308,7 +286,6 @@ for hh = 1:heightsize
 
 end
 
-
 for hh = 1:heightsize
     for tt9 = 1:timesize
           if abs(elevationMWR_hua(tt9)-90) < 1 % aqui si esta bien poner 90 deg, porque en el file son 30 deg
@@ -328,7 +305,6 @@ for hh = 1:heightsize
     end
 
 end
-
 
 count=0;
 for titi=1:length(humidity30elev)
@@ -416,7 +392,6 @@ end
          distaHoriz2D(hh,az(tim))= distaHoriz(hh,tim);
          iwv(az(tim),scan(tim))= prw(tim);
          %humMatAzimuths(hh,az(tim)) = 
-
          
 end
 end
@@ -437,7 +412,6 @@ end
          distaHoriz2D90(hh,az90(tim90))= distaHoriz90(hh,tim90);
          iwv90(az90(tim90),scan90(tim90))= prw(tim90);
          %humMatAzimuths(hh,az(tim)) = 
-
          
 end
 end
@@ -464,7 +438,6 @@ end
          end
       end
  end
-
 
  for h9=1:altura90
       for t9=1:tiempo90
@@ -521,7 +494,6 @@ if inverse==0
          end
 end
 %%
-
         flagHum_all(h,an,t) = flagMat3D(h,an,t);
 
          if abs(timescan2D(an,t)-12)<0.4
@@ -536,9 +508,6 @@ end
          flagHum(h,t) = nanmean(nonzeros(flagHum_all(h,:,t)));
      end
  end
-
-
-%just checking there are no zeros:
 
 % next cycles to take out data with smaller than the advection used horizontal distance
 if avoid_low_heights ==1
@@ -563,7 +532,6 @@ for hh = 1:altura; for tt = 1:tiempo
         end
 end; end
 %%
-
 distanciaenaltura = nanmean(distaHoriz2D');
 
 %% Making gradients of humidity and distance:
@@ -593,22 +561,6 @@ end; end
 distanciaenaltura(1)=distanciaenaltura(2);
 zonaldistdif = 2*distanciaenaltura;
 meridionaldistdif = 2*distanciaenaltura;
-
-%% filtro para gradientes no realistas:
-%  for h=1:altura
-%      for t=2:tiempo-1
-%         if abs(zonalHumiditydif(h,t))> abs(nanmean([zonalHumiditydif(h,t-1),zonalHumiditydif(h,t+1)]))+...
-%                 abs(std(zonalHumiditydif(h,t-1:t+1)))
-%             zonalHumiditydif(h,t) = nanmean([zonalHumiditydif(h,t-1),zonalHumiditydif(h,t+1)]);
-%         end
-%         if abs(meridionalHumiditydif(h,t))> abs(nanmean([meridionalHumiditydif(h,t-1),meridionalHumiditydif(h,t+1)]))+...
-%                 abs(std(meridionalHumiditydif(h,t-1:t+1)))
-%             meridionalHumiditydif(h,t) = nanmean([meridionalHumiditydif(h,t-1),meridionalHumiditydif(h,t+1)]);
-%         end
-% 
-%      end
-%      
-%  end
  
 %% so I have a zonal and meridional humidity gradients of MWR data:
 for hi=1:altura
@@ -700,10 +652,6 @@ for tiempoMerge =tiempoInicial:length(tim_grid_hum_res)
  %datetimeWDLfit(tiempoMerge) = nanmean(datetimeWDL(minindiWDL(tiempoMerge)...
   %   :nanmin(maxindiWDL(tiempoMerge),szhws1)));
 
- % I am not homogenizating temporal resolution of height because it doesn't
- % have a temporal dependence in the netcdf file. For the WDL: height,Size:320x1, Dimensions: height
- % whereas for the MWR: height, Size:43x1 , Dimensions: height 
-
  %heightMWRtimefit(tiempoMerge) = nanmean(heightMWR(minindiMWR(tiempoMerge):nanmin(maxindiMWR(tiempoMerge),length(heightMWR))));
  %heightWDLtimefit(tiempoMerge) = nanmean(heightWDL(minindiWDL(tiempoMerge):nanmin(maxindiWDL(tiempoMerge),length(heightMWR))));
  
@@ -771,21 +719,6 @@ for heightMerge = 1:lengthHeight-1
 
 end % ends the homogeneization of heights between MWR and WDL
 
-% % delete unreliably big values
-%   maxval = min(nanmean(nanmean(dHumdx_fitfit(:,5:end)))+numdesvstd*nanmean(std(dHumdx_fitfit)),...
-%         nanmean(nanmean(dHumdy_fitfit(:,5:end)))+numdesvstd*nanmean(std(dHumdy_fitfit)));
-% 
-    [si, sj] = size(dHumdx_fitfit);
-%   for i=1:si
-%       for j=1:sj
-%           if abs(dHumdx_fitfit(i,j))> maxval; dHumdx_fitfit(i,j)=NaN;
-%               if abs(dHumdy_fitfit(i,j))> maxval; dHumdy_fitfit(i,j)=NaN;
-%               end
-%           end
-%       end
-%   end
-%    
-
 %% for  uncertainty:
 % for velocities:
 velo =mean([(abs(nanmean(nanmean((v_fitfit(:,2:end)))))), (abs(nanmean(nanmean((u_fitfit(:,2:end))))))]);% mean([nanmean(nanmean(u)),nanmean(nanmean(v))]);
@@ -807,7 +740,6 @@ for heu=1:height_wdl
     end
 end
 
-
 %% uncertainties:
 %mindist=500; % m this is the minimum horiz dist to estimate advection
 %minhei= round(mindist/2/tand(60)); % tangent of 60 cause that's the cone and 
@@ -815,16 +747,6 @@ dist_maxhei = 2*maxheight_upperabl*tand(60);
 dist_A_to_B = nanmean([mindist, dist_maxhei])./1000;
 
 dHumdx_fitfit=dHumdx_fitfit'; dHumdy_fitfit= dHumdy_fitfit';
-
-% for h=1:si-3; for hh=1:sj-3
-%         if dHumdx_fitfit(sj,si)==inf || dHumdx_fitfit(sj,si)==-inf
-%             dHumdx_fitfit(sj,si)=NaN;
-%         end
-%         if dHumdy_fitfit(sj,si)==inf || dHumdy_fitfit(sj,si)==-inf
-%             dHumdy_fitfit(sj,si)=NaN;
-%         end
-% end; end
-
 
 indihei_abl = find(abs(heightMWR_ta-maxheightABL)<200); indihei_abl= indihei_abl(1);
 gradient_hum_zonal =nanmean(abs(dHumdx_fitfit)); gradient_hum_meridional =nanmean(abs(dHumdy_fitfit));
@@ -855,8 +777,6 @@ sigma_gradient_hum = (var_gradient_temp); % this is uncert delta_T/delta_x uncer
     sigma_advection_hum_zonal = sqrt(var_advection_hum_zonal);
     sigma_advection_hum_meridional = sqrt(var_advection_hum_meridional);
     sigma_advection_hum = sqrt(sigma_advection_hum_zonal.^2 +sigma_advection_hum_meridional.^2);
-
-
 
 %  %%
 % figure; pcolor(timefit',heightfitfit,dTdx_fitfit'); colorbar; caxis([-.001, .001]); title('dT/dx fit'); ylim([0, 2000])
@@ -911,8 +831,6 @@ y_advection_smooth = NaN*ones(si,sj);
 mean_value_x = x_advection;%smooth(nanmean(x_advection));
 mean_value_y = y_advection;%smooth(nanmean(y_advection));
 
-
-
 %% changing units from kg/kg/s to g/kg/hr:
 
 x_advection= 3600*1000.*x_advection;
@@ -932,7 +850,6 @@ for tw=1:sztw; for hw=1:szhw
         end
 end
 end
-
 
 %% figures velocity:
 
@@ -956,9 +873,6 @@ end
 for t=1:ti; for h=1:hi
             if heightWDL(h)<minheight_surf; u_ABL(t,h)=NaN;v_ABL(t,h)=NaN; end
 end; end
-
-
-addpath('/home/andreaburgos/Documentos/Koeln/mlocal')
 
 % NCV_banded'
 figure('position',[1,1,1700,350],'Renderer','painters');
@@ -1076,50 +990,7 @@ y_advection_smooth = NaN*ones(si,sj);
 mean_value_x = x_advection;%smooth(nanmean(x_advection));
 mean_value_y = y_advection;%smooth(nanmean(y_advection));
 
-% for i=1:si-1
-%     for j=1:sj-1
-%         if isnan(x_advection(i,j))==0
-%             x_advection_smooth(i,j) = mean_value_x(j);
-%         end
-%         if isnan(y_advection(i,j))==0
-%             y_advection_smooth(i,j) = mean_value_y(j);
-%         end
-%     end
-% end
-
-
-% %% limitando la adveccion verticalmente para no tomar alturas mayores a ABLH
-% timefit=smooth(timefit);
-% for bl=1:length(timefit) %encontrando los indices de tiempo correspondientes a CBLH from TM classif.
-%     
-%    indi_num= find(abs(timeTM-timefit(bl))==min(abs(timeTM-timefit(bl))));
-%    indice(bl) =indi_num(1);
-%  
-%    for hei=1:si       
-%        if heightfitfit(hei) > fraction_supABL*CBLHTM(indice(bl))
-%            x_advection(hei,bl)=NaN;
-%            y_advection(hei,bl)=NaN;
-%            vel_horiz(hei,bl)=NaN;
-%        end     
-%        if heightfitfit(hei) < fraction_infABL*CBLHTM(indice(bl))
-%            x_advection(hei,bl)=NaN;
-%            y_advection(hei,bl)=NaN;
-%            vel_horiz(hei,bl)=NaN;
-%        end
-%    end
-% 
-% end
-% 
-% for i=1:si; for j=1:sj
-%         if isnan(x_advection(i,j))==1; x_adv_uncert(i,j)=NaN; end
-%         if isnan(y_advection(i,j))==1; y_adv_uncert(i,j)=NaN; end
-% 
-%         if (timefit(j)<10|| timefit(j)>16); x_adv_uncert(i,j)=NaN; end
-%         if (timefit(j)<10|| timefit(j)>16); y_adv_uncert(i,j)=NaN; end
-% end; end
-
 %% changing units from kg/kg/s to g/kg/hr:
-
 x_advection= 3600*1000.*x_advection;
 y_advection = 3600*1000.*y_advection;
 
@@ -1131,7 +1002,6 @@ humidityadvectioncolumn_y = smooth(nanmean(y_advection));
 
 [hh, tt] = size(humEast);
 heightMWR_ta; timezonal;
-
 
 % humidities are specific q in kg/kg, we convert to g/kg:
 humEast=1000.*humEast; humWest=1000.*humWest; humSouth=1000.*humSouth; humNorth=1000.*humNorth; humZenith=1000.*humZenith;
@@ -1233,7 +1103,6 @@ legend(['Hum North (',num2str(minH_surf),'-', num2str(maxH_surf),' m) ';...
     'Wind Vector(', num2str(minH_surf),'-', num2str(maxH_surf),' m)'], 'Location','northeast')
 
 
-
 %% figures velocity:
 
 heightWDL; u_ABL=uzonalvel; v_ABL=vmeridionalvel; yliminf=minheight_surf-50; ylimsup=maxheight_upperabl+50;
@@ -1256,47 +1125,6 @@ end
 for t=1:ti; for h=1:hi
             if heightWDL(h)<minheight_surf; u_ABL(t,h)=NaN;v_ABL(t,h)=NaN; end
 end; end
-
-
-addpath('/home/andreaburgos/Documentos/Koeln/mlocal')
-% 
-% % NCV_banded'
-% figure('position',[1,1,1700,350],'Renderer','painters');
-% subplot(1,2,1); pcolor(100*decimaltimeWDL,heightWDL(2:end),u_ABL(:,2:end)'); %shading interp
-% hold on; quiver(100*decimaltimeWDL(1:stepquiv:end),heightWDL(1:stepquiv:end),...
-%     u_ABL(1:stepquiv:end,(1:stepquiv:end))',v_ABL(1:stepquiv:end,(1:stepquiv:end))', scale,'k','LineWidth',1.5);
-% title('Zonal wind u')
-% aa1 = (nclCM('NCV_jaisnd',(size(min_color_vel:step_color_velocity:max_color_vel,2)-1)));
-% aa1(end,:) = [.8 .8 .8];  xlim([starttimev endtimev]); 
-% %cc = colorbar;  cc.Ticks = [min_color_vel:step_color_velocity*4:max_color_vel];
-% %c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
-% colormap(aa1); grid on; ylim([yliminf ylimsup]); ylabel('height [m]')
-% colorbar;  caxis([minVcolor maxVcolor])
-% xlabel('time UTC [h]'); shading flat; 
-% hcb_velocities=colorbar; xlim([starttimev endtimev]); 
-% colorTitleHandle_velocities = get(hcb_velocities,'Title');
-% titleString_velocities = '[ms^{-1}]';
-% set(colorTitleHandle_velocities ,'String',titleString_velocities); 
-% 
-% subplot(1,2,2); pcolor(100*decimaltimeWDL,heightWDL(2:end),v_ABL(:,2:end)'); %shading interp
-% hold on; quiver(100*decimaltimeWDL(1:stepquiv:end),heightWDL(1:stepquiv:end),...
-%     u_ABL(1:stepquiv:end,(1:stepquiv:end))',v_ABL(1:stepquiv:end,(1:stepquiv:end))',scale, 'k','LineWidth',1.5);
-% title('Meridional wind v')
-% aa1 = (nclCM('NCV_jaisnd',(size(min_color_vel:step_color_velocity:max_color_vel,2)-1)));
-% aa1(end,:) = [.8 .8 .8];
-% cc = colorbar;  cc.Ticks = [min_color_vel:step_color_velocity:max_color_vel];
-% %c.Color = 'black';    c.Box = 'off';    c.Location = 'EastOutside';
-% colormap(aa1); grid on; ylim([yliminf ylimsup]); ylabel('height [m]'); colorbar
-% xlabel('time UTC [h]'); shading flat; caxis([minVcolor maxVcolor])
-% hcb_velocities=colorbar; xlim([starttimev endtimev]); 
-% colorTitleHandle_velocities = get(hcb_velocities,'Title');
-% titleString_velocities = '[ms^{-1}]';
-% set(colorTitleHandle_velocities ,'String',titleString_velocities); 
-% 
-% % saveas(figure(3),[pathfigs,'velocity_directions_...' ...
-% %      num2str(year),sprintf('%02d', month),sprintf('%02d',day),'.png'])
-% % 
-
 
 %% figures:
 
@@ -1507,7 +1335,6 @@ ncwrite(nc_humidity_advection,'_heightfitfit',heightfitfit');
 %n = ncread(nc_theta_advection, '_Advection_theta_zonal');
 %%
 
-
 %% figures:
 
 %figure; pcolor(timegrid,heightfitfit,Tdif_zonal); colorbar; caxis([-5e-4 5e-4]); title('(T_E -T_W)/\Deltax')
@@ -1516,188 +1343,10 @@ ncwrite(nc_humidity_advection,'_heightfitfit',heightfitfit');
 % fig temperature in each direction:
 min_colorT=290; max_colorT=310; step_colorT=.5; extraabl=500;
 aaTemp = (nclCM('cmp_b2r',(size(min_colorT:step_colorT:max_colorT,2)-1)));
-
-% figure('position',[1,1,1400,900],'Renderer','painters');
-% subplot(2,2,1)
-% pcolor(decimaltimeMWR,heightMWR_ta,tempEast); %colorbar;
-% ylim([minheight_surf maxheight_upperabl+extraabl]); xlim([starttime endtime]);  grid on;
-% aaTemp = (nclCM('cmp_b2r',(size(min_colorT:step_colorT:max_colorT,2)-1)));
-% colormap(aaTemp); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;
-% title('\theta East'); caxis([min_colorT max_colorT])
-% xlabel('time UTC [hours]'); 
-% hcb_temp=colorbar;
-% colorTitleHandle_temp = get(hcb_temp,'Title');
-% titleString_temp = '[K]';
-% set(colorTitleHandle_temp ,'String',titleString_temp); 
-% 
-% 
-% subplot(2,2,2)
-% pcolor(timemwr,heightMWR_ta,tempWest); %colorbar;
-% ylim([minheight_surf maxheight_upperabl+extraabl]); xlim([starttime endtime]);  grid on;
-% aaTemp = (nclCM('cmp_b2r',(size(min_colorT:step_colorT:max_colorT,2)-1)));
-% colormap(aaTemp); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;
-% title('\theta West'); caxis([min_colorT max_colorT])
-% xlabel('time UTC [hours]');
-% hcb_temp=colorbar;
-% colorTitleHandle_temp = get(hcb_temp,'Title');
-% titleString_temp = '[K]';
-% set(colorTitleHandle_temp ,'String',titleString_temp);
-% 
-% subplot(2,2,3)
-% pcolor(timemwr,heightMWR_ta,tempNorth); %colorbar;
-% ylim([minheight_surf maxheight_upperabl+extraabl]); xlim([starttime endtime]);  grid on;
-% aaTemp = (nclCM('cmp_b2r',(size(min_colorT:step_colorT:max_colorT,2)-1)));
-% colormap(aaTemp); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;
-% title('\theta North'); caxis([min_colorT max_colorT])
-% xlabel('time UTC [hours]'); 
-% hcb_temp=colorbar;
-% colorTitleHandle_temp = get(hcb_temp,'Title');
-% titleString_temp = '[K]';
-% set(colorTitleHandle_temp ,'String',titleString_temp);
-% 
-% subplot(2,2,4)
-% pcolor(timemwr,heightMWR_ta,tempSouth); %colorbar;
-% ylim([minheight_surf maxheight_upperabl+extraabl]); xlim([starttime endtime]);  grid on;
-% aaTemp = (nclCM('cmp_b2r',(size(min_colorT:step_colorT:max_colorT,2)-1)));
-% colormap(aaTemp); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;
-% title('\theta South'); caxis([min_colorT max_colorT])
-% xlabel('time UTC [hours]'); 
-% hcb_temp=colorbar;
-% colorTitleHandle_temp = get(hcb_temp,'Title');
-% titleString_temp = '[K]'; 
-% set(colorTitleHandle_temp ,'String',titleString_temp);
-% 
-% saveas(figure(4),[pathfigs,'theta_directions_...' ...
-%      num2str(year),sprintf('%02d', month),sprintf('%02d',day),'.png'])
-% 
-
 %%
 
-%
 min_colorTdif=-0.5; max_colorTdif=-min_colorTdif; step_colorTdif=0.0005;
 aaTempdif = (nclCM('cmp_b2r',(size(min_colorTdif:step_colorTdif:max_colorTdif,2)-1)));
-%dTempdxzonal=1000.*dTempdxzonal; dTempdymeridional=1000.*dTempdymeridional; % converting from m to km
-% 
-% figure('position',[1,1,800,1200],'Renderer','painters');
-% subplot(2,1,1)
-% pcolor(timegrid,heightfitfit,Tdif_zonal); 
-% ylim([minheight_surf-10 maxheight_upperabl+extraabl]); xlim([starttime endtime]);  grid on;
-% aaTempdif = (nclCM('CBR_coldhot',(size(min_color:step_color:max_color,2)-1)));
-% colormap(aaTempdif); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;
-% title('(\theta_E-\theta_W)(\Deltax)^{-1}'); caxis([min_colorTdif max_colorTdif])
-% xlabel('time UTC [hours]'); colorbar;
-% hcb_tempdif=colorbar;
-% colorTitleHandle_tempdif = get(hcb_tempdif,'Title');
-% titleString_tempdif = '[Kkm^{-1}]'; 
-% set(colorTitleHandle_tempdif ,'String',titleString_tempdif);
-% 
-% subplot(2,1,2)
-% pcolor(timegrid,heightfitfit,Tdif_meridional); 
-% ylim([minheight_surf-10 maxheight_upperabl+extraabl]); xlim([starttime endtime]);  grid on;
-% aaTempdif = (nclCM('CBR_coldhot',(size(min_color:step_color:max_color,2)-1)));
-% colormap(aaTempdif); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;
-% title('(\theta_N-\theta_S)(\Deltay)^{-1}'); 
-% xlabel('time UTC [hours]'); caxis([min_colorTdif max_colorTdif]); colorbar
-% hcb_tempdif=colorbar;
-% colorTitleHandle_tempdif = get(hcb_tempdif,'Title');
-% titleString_tempdif = '[Kkm^{-1}]'; 
-% set(colorTitleHandle_tempdif ,'String',titleString_tempdif);
-% 
-% % saveas(figure(5),[pathfigs,'theta_diff_zonal_merid_...' ...
-% %      num2str(year),sprintf('%02d', month),sprintf('%02d',day),'.png'])
-% 
-% %% saving variables 2:
-% %saving netcdf for theta in directions
-% nc_humidity_zonaldifmeriddif = [pathoutnet, '/', num2str(year),...
-%     sprintf('%02d', month),sprintf('%02d', day),'_theta_dif_zonal_meridional.nc'];
-% 
-% nccreate(nc_humidity_zonaldifmeriddif,'_theta_zonaldif','Dimensions',{'time',length(timegrid),'height',length(heightfitfit)});
-% nccreate(nc_humidity_zonaldifmeriddif,'_theta_meridionaldif','Dimensions',{'time',length(timegrid),'height',length(heightfitfit)});
-% nccreate(nc_humidity_zonaldifmeriddif,'_timegrid','Dimensions',{'time',length(timegrid)});
-% nccreate(nc_humidity_zonaldifmeriddif,'_heightfitfit','Dimensions',{'height',length(heightfitfit)});
-% 
-% ncwrite(nc_humidity_zonaldifmeriddif,'_theta_zonaldif',humdifzonal');
-% ncwrite(nc_humidity_zonaldifmeriddif,'_theta_meridionaldif',Tdif_meridional');
-% ncwrite(nc_humidity_zonaldifmeriddif,'_timegrid',timegrid);
-% ncwrite(nc_humidity_zonaldifmeriddif,'_heightfitfit',heightfitfit);
-% %n = ncread(nc_theta_zonaldifmeriddif, '_theta_zonaldif');
-% %%
-
-% %% Estimating advection (height resolved):
-% u_fitfit= 3600.*u_fitfit./1000; v_fitfit = 3600.*v_fitfit./1000; % from m/s to km/hr
-% 
-% advection_zonal = (-u_fitfit.*Tdif_zonal); % (km/hr) (K/km) = K/hr
-% advection_meridional = -(v_fitfit.*Tdif_meridional);
-% 
-% min_colorAdv= -8; max_colorAdv=-min_colorAdv; step_colorAdv =0.01;
-% timegrid=timezonal;
-% figure('position',[1,1,1500,800],'Renderer','painters');
-% subplot(3,1,1); 
-% pcolor(timegrid,heightfitfit,advection_zonal); title('u\cdot(\Delta\theta/\Deltax)')
-% aaAdv = (nclCM('cmp_b2r',(size(min_colorAdv:step_colorAdv:max_colorAdv,2)-1)));
-% colormap(aaAdv); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-% ylabel('height [m]'); shading flat; xlim([starttime, endtime]);  ylim([minheight_surf-10, maxheight_upperabl+100]); 
-% caxis([min_colorAdv max_colorAdv]); xlabel('time UTC [hours]'); 
-% hcb_tempdif=colorbar;
-% colorTitleHandle_tempdif = get(hcb_tempdif,'Title');
-% titleString_tempdif = '[K hr^{-1}]';
-% set(colorTitleHandle_tempdif ,'String',titleString_tempdif);
-% 
-% 
-% subplot(3,1,2); 
-% pcolor(timegrid,heightfitfit,advection_meridional); title('v\cdot(\Delta\theta/\Deltay)')
-% aaAdv = (nclCM('cmp_b2r',(size(min_colorAdv:step_colorAdv:max_colorAdv,2)-1)));
-% colormap(aaAdv); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat;  ylim([minheight_surf-10, maxheight_upperabl+100]);  xlim([starttime, endtime])
-% caxis([min_colorAdv max_colorAdv]); xlabel('time UTC [hours]'); 
-% hcb_tempdif=colorbar; 
-% colorTitleHandle_tempdif = get(hcb_tempdif,'Title');
-% titleString_tempdif = '[K hr^{-1}]';
-% set(colorTitleHandle_tempdif ,'String',titleString_tempdif);
-% 
-% subplot(3,1,3);
-% pcolor(timegrid,heightfitfit,advection_zonal+advection_meridional); title('u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)')
-% aaAdv = (nclCM('cmp_b2r',(size(min_colorAdv:step_colorAdv:max_colorAdv,2)-1)));
-% colormap(aaAdv); %title(['u ({\Delta\theta}/{\Deltax})  ', num2str(year),'.',...
-%     %sprintf('%02d',month),'.',sprintf('%02d',day)]); 
-%     ylabel('height [m]');   shading flat; ylim([minheight_surf-10, maxheight_upperabl+100]); xlim([starttime, endtime])
-% caxis([min_colorAdv max_colorAdv]); xlabel('time UTC [hours]'); 
-% hcb_tempdif=colorbar;
-% colorTitleHandle_tempdif = get(hcb_tempdif,'Title');
-% titleString_tempdif = '[K hr^{-1}]'; 
-% set(colorTitleHandle_tempdif ,'String',titleString_tempdif);
-% 
-% % saveas(figure(6),[pathfigs,'thermalAdvection_height_...' ...
-% %      num2str(year),sprintf('%02d', month),sprintf('%02d',day),'.png'])
-% 
-% %% saving variables 4:
-% %saving netcdf for theta in directions
-% nc_humidity_advection = [pathoutnet, '/', num2str(year),...
-%     sprintf('%02d', month),sprintf('%02d', day),'_humidity_advection.nc'];
-% 
-% nccreate(nc_humidity_advection,'_Advection_humidity_zonal','Dimensions',{'time',length(timezonal),'height',length(heightfitfit)});
-% nccreate(nc_humidity_advection,'_Advection_humidity_meridional','Dimensions',{'time',length(timezonal),'height',length(heightfitfit)});
-% nccreate(nc_humidity_advection,'_timegrid','Dimensions',{'time',length(timezonal)});
-% nccreate(nc_humidity_advection,'_heightfitfit','Dimensions',{'height',length(heightfitfit)});
-% 
-% ncwrite(nc_humidity_advection,'_Advection_humidity_zonal',advection_zonal');
-% ncwrite(nc_humidity_advection,'_Advection_humidity_meridional',advection_meridional');
-% ncwrite(nc_humidity_advection,'_timegrid',timezonal);
-% ncwrite(nc_humidity_advection,'_heightfitfit',heightfitfit');
 
 %n = ncread(nc_theta_advection, '_Advection_theta_zonal');
 %%
@@ -1745,56 +1394,7 @@ minH_upperabl=minheight_upperabl;  maxH_upperabl=maxheight_upperabl;
 %sigma_gradient_temp=sigma_gradient_temp; 
 minlim=-17; maxlim = -minlim;
 bluebonito = [0.1 0.4 0.8]; redbonito = [0.8 0.3 0.3]; purplebonito = [0.7 0.3 0.7];
-% 
-% figure('position',[1,1,1200,1000],'Renderer','painters'); 
-% 
-% subplot(2,2,1)
-% plot(timegrid,advection_zonal_allabl, 'Color', bluebonito,'LineWidth',2); hold on; 
-% %plot(timegrid,advection_total_allabl,'r', 'LineWidth',1); grid on
-% xlabel('time [hr]'); xlim([starttime, endtime]); ylabel('\theta advection [K hr^{-1}]'); ylim([minlim, maxlim])
-% % hold on
-% % fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-% %      [0.7 0.1 0.2], 'FaceAlpha', 0.1);
-% hold on; grid on;
-% fill([timegrid fliplr(timegrid)], [advection_zonal_allabl-sigma_advection_temp_adj_zonal...
-%     fliplr(advection_zonal_allabl+sigma_advection_temp_adj_zonal)], ...
-%      bluebonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% legend([ 'u\cdot(\Delta\theta/\Deltax)                        '; 'uncertainty of u\cdot(\Delta\theta/\Deltax)         '])
-%     %'u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)']); 
-% title(['                                                     (',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')      ' ...
-%     ,'\theta advection in ABL (',num2str(minheight_surf),'-', num2str(maxheight_upperabl),' m) ']);
-% 
-% subplot(2,2,2)
-% plot(timegrid, advection_meridional_allabl,  'color', purplebonito, 'LineWidth',2); hold on
-% %plot(timegrid,advection_total_allabl,'r', 'LineWidth',1); grid on
-% % title(['(',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')      ' ...
-% %     ,'\theta advection in ABL (',num2str(minheight_surf),'-', num2str(maxheight_upperabl),' m) ']);
-% % legend([ '     v\cdot(\Delta\theta/\Deltay)                        ';...
-% %     'u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)']); 
-% xlabel('time [hr]'); xlim([starttime, endtime]); ylabel('\theta advection [K hr^{-1}]'); ylim([minlim, maxlim])
-% % hold on
-% % fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-% %      [0.7 0.1 0.2], 'FaceAlpha', 0.1);
-% hold on; grid on
-% fill([timegrid fliplr(timegrid)], [advection_meridional_allabl-sigma_advection_temp_adj_meridional...
-%     fliplr(advection_meridional_allabl+sigma_advection_temp_adj_meridional)], ...
-%      purplebonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% legend([ 'v\cdot(\Delta\theta/\Deltay)                        '; 'uncertainty of v\cdot(\Delta\theta/\Deltay)         '])
-% 
-% subplot(2,2,3:4)
-% plot(timegrid,advection_total_allabl,'color', redbonito, 'LineWidth',2); grid on
-% % title(['(',num2str(year),'.',sprintf('%02d', month),'.',sprintf('%02d',day),')      ' ...
-% %     ,'\theta advection in ABL (',num2str(minheight_surf),'-', num2str(maxheight_upperabl),' m) ']);
-% xlabel('time [hr]'); xlim([starttime, endtime]); ylabel('\theta advection [K hr^{-1}]'); ylim([minlim, maxlim])
-% % hold on
-% % fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-% %      [0.7 0.1 0.2], 'FaceAlpha', 0.1);
-% hold on
-% fill([timegrid fliplr(timegrid)], [advection_total_allabl-sigma_advection_temp_adj...
-%     fliplr(advection_total_allabl+sigma_advection_temp_adj)], ...
-%      redbonito, 'FaceAlpha', 0.1,'EdgeColor','none');
-% legend([ '       u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)        '; ...
-%     'uncertainty of u\cdot(\Delta\theta/\Deltax)+v\cdot(\Delta\theta/\Deltay)']); 
+
 sigma_advection_hum_adj=sigma_advection_hum(1:szadv_time); 
 sigma_advection_hum_adj_zonal=sigma_advection_hum_zonal(1:szadv_time); sigma_advection_hum_adj_meridional=sigma_advection_hum_meridional(1:szadv_time); 
 sigma_gradient_hum=sigma_gradient_hum; minlim=-7; maxlim = -minlim;
@@ -1806,7 +1406,6 @@ advection_zonal_allabl = nanmean(x_advection); advection_meridional_allabl = nan
 % advection_total_lowerabl = (advection_zonal_lowerabl+advection_meridional_lowerabl);
 % advection_total_upperabl = (advection_zonal_upperabl+advection_meridional_upperabl);
 advection_total_allabl = (advection_zonal_allabl+advection_meridional_allabl);
-
 
 
 figure('position',[1,1,1400,500],'Renderer','painters'); 
