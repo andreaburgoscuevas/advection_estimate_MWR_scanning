@@ -7,10 +7,9 @@ day1=8; day2=day1+1;
 horaini = 15; horafin=9;
 starttime=horaini; endtime=horafin;
 
-path_netcdf= '/home/andreaburgos/Documentos/Koeln/output_unam/netcdf_out/';
-path_figs = '/home/andreaburgos/Documentos/Koeln/output_unam/figuresPaper20260615/';
+path_netcdf= '/path/to/NetCDFoutput/';
+path_figs = '/path/to/outputFigures/';
 
-addpath('/home/andreaburgos/Documentos/Koeln/mlocal')
 set(groot, 'DefaultAxesFontSize', 13);
 set(groot, 'DefaultTextFontSize', 13);
 
@@ -122,13 +121,6 @@ yticks(100*round(minheight_surf/100):200:maxheight_upperabl+extraabl)
 
 saveas(figure(1),[path_figs,num2str(year),sprintf('%02d', month),'_',sprintf('%02d', day1),...
     'and',sprintf('%02d', day2),'_humidity_directions_2days.png'])
-
-% [szx, szy] = size(humSouth2days);
-% for i=1:szx; for j=1:szy
-%         hum_all_2days(i,j)=nanmean([humNorth2days(i,j),humSouth2days(i,j),...
-%             humEast2days(i,j),humWest2days(i,j)]);
-% end; end
-
 
 %% Hum dif zonal and meridional
 
@@ -413,8 +405,6 @@ colorzonal = [0.1 0.5 0.50]; colormeridional = [0.6 0.3 0.5];
 scale=1; % scale for quiver wind vectors
 Gray1 = [128 128 128]/255; Gray2 = [100 100 128]/255; Gray3 = [75 75 128]/255; Gray4 = [60 60 128]/255;
  
-
-
 %% Advection plots
 
 file_humidity_Advect_day1 = ([path_netcdf,num2str(year),sprintf('%02d', month),sprintf('%02d', day1), '_humidity_advection.nc']);
